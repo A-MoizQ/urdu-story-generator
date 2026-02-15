@@ -1,0 +1,147 @@
+# ──────────────────────────────────────────────────────────────
+# CI/CD Pipeline — Urdu Story Generation Backend
+#
+# Triggers on:
+#   - Push to main (deploy)
+#   - Pull requests to main (test only)
+#
+# Jobs:
+#   1. lint      — basic Python linting
+#   2. test      — generate proto stubs → run pytest
+#   3. build     — build & push Docker image to GHCR
+#   4. deploy    — trigger Render deploy via webhook
+#
+# NOTE: Build & Deploy stages are gated behind the DEPLOY_ENABLED
+#       repository variable. To activate deployment:
+#       GitHub repo → Settings → Variables → Actions → New variable
+#       Name: DEPLOY_ENABLED   Value: true
+# ──────────────────────────────────────────────────────────────
+
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/ci-cd.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/ci-cd.yml"
+
+env:
+  PYTHON_VERSION: "3.12"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/urdu-story-backend
+
+# ══════════════════════════════════════════════════════════════
+jobs:
+
+  # ────────────────────────── LINT ──────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install linting tools
+        run: pip install ruff
+
+      - name: Run ruff linter
+        run: ruff check backend/ --output-format=github
+
+  # ────────────────────────── TEST ──────────────────────────
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Generate proto stubs
+        run: bash backend/scripts/generate_proto.sh
+
+      - name: Run tests
+        run: |
+          cd "${{ github.workspace }}"
+          python -m pytest backend/tests/ -v --tb=short
+
+  # ────────────────────── BUILD & PUSH ─────────────────────
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      vars.DEPLOY_ENABLED == 'true'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────── DEPLOY ─────────────────────────
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: build
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      vars.DEPLOY_ENABLED == 'true'
+
+    steps:
+      - name: Trigger Render deploy
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        env:
+          # Set RENDER_DEPLOY_HOOK_URL in GitHub repo secrets
+          # Get this URL from: Render Dashboard → Service → Settings → Deploy Hook
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}

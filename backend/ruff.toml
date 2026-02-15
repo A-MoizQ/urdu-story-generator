@@ -1,0 +1,22 @@
+# Ruff linter configuration
+# https://docs.astral.sh/ruff/
+
+target-version = "py312"
+line-length = 100
+
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "E402",  # module-level import not at top (required for sys.path manipulation)
+]
+
+# Exclude generated protobuf files
+exclude = [
+    "proto/story_pb2.py",
+    "proto/story_pb2_grpc.py",
+    "proto/story_pb2.pyi",
+]
+
+[lint.isort]
+known-first-party = ["backend"]

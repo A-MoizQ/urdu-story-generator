@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated proto stubs (regenerated during build)
+backend/proto/story_pb2.py
+backend/proto/story_pb2_grpc.py
+backend/proto/story_pb2.pyi
+
+# Environment
+.env
+.env.local
+
+# Tests
+.pytest_cache/
+htmlcov/
+.coverage

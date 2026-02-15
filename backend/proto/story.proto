@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package story;
+
+// Service definition for Urdu story generation
+service StoryGenerator {
+  // Server-streaming RPC: sends tokens one by one for ChatGPT-like UX
+  rpc GenerateStory (GenerateRequest) returns (stream GenerateResponse);
+
+  // Unary RPC: health check
+  rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message GenerateRequest {
+  // The starting phrase/prefix in Urdu
+  string prefix = 1;
+
+  // Maximum number of tokens to generate (0 = generate until <EOT>)
+  int32 max_length = 2;
+}
+
+message GenerateResponse {
+  // A single generated token (decoded back to text)
+  string token = 1;
+
+  // Whether this is the final token in the sequence
+  bool is_finished = 2;
+
+  // Running concatenation of all tokens generated so far
+  string full_text = 3;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+  string model_loaded = 2;
+  string tokenizer_loaded = 3;
+}

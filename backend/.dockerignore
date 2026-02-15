@@ -1,0 +1,13 @@
+# Ignore everything in build context except what we need
+**/__pycache__
+**/.pytest_cache
+**/.git
+**/.venv
+**/venv
+**/.env
+**/node_modules
+**/*.pyc
+**/.coverage
+**/htmlcov
+.github/
+README.md

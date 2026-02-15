@@ -1,0 +1,44 @@
+# ──────────────────────────────────────────────────────────────
+# Render Blueprint — Infrastructure as Code
+# https://render.com/docs/blueprint-spec
+#
+# Place this file at the repo root. When you connect the repo
+# to Render, it will auto-detect this file and set up the service.
+# ──────────────────────────────────────────────────────────────
+
+services:
+  - type: web
+    name: urdu-story-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: oregon
+
+    # Render free tier
+    plan: free
+
+    # Render routes public traffic to this port (HTTP gateway)
+    # Render auto-sets PORT=10000 for web services
+    envVars:
+      - key: GRPC_HOST
+        value: "0.0.0.0"
+      - key: GRPC_PORT
+        value: "50051"
+      - key: HTTP_PORT
+        value: "10000"
+      - key: MODEL_DIR
+        value: "/app/backend/models"
+      - key: TOKENIZER_PATH
+        value: "/app/backend/models/bpe_tokenizer.json"
+      - key: TRIGRAM_MODEL_PATH
+        value: "/app/backend/models/trigram_model.json"
+      - key: GENERATION_DELAY_MS
+        value: "50"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+    # Health check via HTTP gateway
+    healthCheckPath: /health
+
+    # Auto-deploy on push to main
+    autoDeploy: true
