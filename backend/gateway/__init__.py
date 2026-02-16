@@ -34,17 +34,22 @@ if str(ROOT_DIR) not in sys.path:
 
 from backend.config import config
 from backend.inference import StoryGenerator
+from backend.mock import MockStoryGenerator
 
 logger = logging.getLogger(__name__)
 
 # Module-level generator (shared with gRPC server if running in same process)
-_generator: StoryGenerator | None = None
+_generator: StoryGenerator | MockStoryGenerator | None = None
 
 
-def _get_generator() -> StoryGenerator:
+def _get_generator() -> StoryGenerator | MockStoryGenerator:
     global _generator
     if _generator is None:
-        _generator = StoryGenerator()
+        if config.is_development:
+            logger.info("APP_ENV=development → using MockStoryGenerator")
+            _generator = MockStoryGenerator()
+        else:
+            _generator = StoryGenerator()
         _generator.load()
     return _generator
 
@@ -72,7 +77,7 @@ app = FastAPI(
 # CORS — allow the Vercel frontend to call this endpoint
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten in production
+    allow_origins=config.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

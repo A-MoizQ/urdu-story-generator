@@ -20,6 +20,8 @@ services:
     # Render routes public traffic to this port (HTTP gateway)
     # Render auto-sets PORT=10000 for web services
     envVars:
+      - key: APP_ENV
+        value: "production"
       - key: GRPC_HOST
         value: "0.0.0.0"
       - key: GRPC_PORT
@@ -33,7 +35,9 @@ services:
       - key: TRIGRAM_MODEL_PATH
         value: "/app/backend/models/trigram_model.json"
       - key: GENERATION_DELAY_MS
-        value: "50"
+        value: "30"
+      - key: CORS_ORIGINS
+        value: "https://urdu-story-generator.vercel.app"
       - key: PYTHONUNBUFFERED
         value: "1"
 

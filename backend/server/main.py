@@ -23,6 +23,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from backend.config import config
 from backend.inference import StoryGenerator
+from backend.mock import MockStoryGenerator
 
 # generated protobuf / gRPC stubs
 from backend.proto import story_pb2, story_pb2_grpc
@@ -30,13 +31,17 @@ from backend.proto import story_pb2, story_pb2_grpc
 logger = logging.getLogger(__name__)
 
 # Module-level generator instance (loaded once at startup)
-_generator: StoryGenerator | None = None
+_generator: StoryGenerator | MockStoryGenerator | None = None
 
 
-def _get_generator() -> StoryGenerator:
+def _get_generator() -> StoryGenerator | MockStoryGenerator:
     global _generator
     if _generator is None:
-        _generator = StoryGenerator()
+        if config.is_development:
+            logger.info("APP_ENV=development → using MockStoryGenerator")
+            _generator = MockStoryGenerator()
+        else:
+            _generator = StoryGenerator()
         _generator.load()
     return _generator
 

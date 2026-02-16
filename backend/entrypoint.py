@@ -22,6 +22,16 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+# Load .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv
+
+    env_file = Path(__file__).resolve().parent / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
+except ImportError:
+    pass
+
 
 async def main() -> None:
     logging.basicConfig(
@@ -30,16 +40,22 @@ async def main() -> None:
     )
     logger = logging.getLogger("entrypoint")
 
-    # Import here so path setup is done first
+    # Import here so path setup and dotenv loading are done first
     import uvicorn
 
+    from backend.config import config
     from backend.server.main import serve as grpc_serve
 
     http_port = int(os.getenv("HTTP_PORT", os.getenv("PORT", "10000")))
 
     logger.info("Starting unified server...")
-    logger.info("  gRPC  → 0.0.0.0:%s", os.getenv("GRPC_PORT", "50051"))
-    logger.info("  HTTP  → 0.0.0.0:%s", http_port)
+    logger.info("  APP_ENV → %s", config.app_env)
+    if config.is_development:
+        logger.info("  MODE   → MOCK (pre-written stories, no model needed)")
+    else:
+        logger.info("  MODE   → PRODUCTION (real model pipeline)")
+    logger.info("  gRPC   → 0.0.0.0:%s", os.getenv("GRPC_PORT", "50051"))
+    logger.info("  HTTP   → 0.0.0.0:%s", http_port)
 
     # Create both server tasks
     grpc_task = asyncio.create_task(grpc_serve())

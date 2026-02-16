@@ -50,6 +50,7 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 # Default env vars (can be overridden at runtime)
+ENV APP_ENV=production
 ENV GRPC_HOST=0.0.0.0
 ENV GRPC_PORT=50051
 # Render sets PORT=10000 automatically for web services

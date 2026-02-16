@@ -30,6 +30,7 @@ backend/proto/story_pb2.pyi
 # Environment
 .env
 .env.local
+.env.production
 
 # Tests
 .pytest_cache/

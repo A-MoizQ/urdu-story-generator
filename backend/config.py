@@ -1,6 +1,10 @@
 """
 Configuration management for the backend service.
 All settings are loaded from environment variables with sensible defaults.
+
+APP_ENV controls the runtime mode:
+    - "development" → uses mock story data (no model artifacts needed)
+    - "production"  → requires real tokenizer + trigram model files
 """
 
 import os
@@ -10,6 +14,19 @@ from dataclasses import dataclass, field
 @dataclass
 class Config:
     """Central configuration for the story generation backend."""
+
+    # --- Environment ---
+    app_env: str = field(
+        default_factory=lambda: os.getenv("APP_ENV", "development")
+    )
+
+    @property
+    def is_development(self) -> bool:
+        return self.app_env.lower() == "development"
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.lower() == "production"
 
     # --- Server ---
     grpc_host: str = field(
@@ -56,6 +73,19 @@ class Config:
     eot_token: str = field(
         default_factory=lambda: os.getenv("EOT_TOKEN", "\uFDD2")
     )  # Story boundary
+
+    # --- CORS ---
+    cors_origins: str = field(
+        default_factory=lambda: os.getenv("CORS_ORIGINS", "*")
+    )
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse comma-separated CORS origins into a list."""
+        raw = self.cors_origins.strip()
+        if raw == "*":
+            return ["*"]
+        return [o.strip() for o in raw.split(",") if o.strip()]
 
 
 # Singleton instance
