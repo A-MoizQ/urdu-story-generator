@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Urdu Story Web Scraper
 =====================================
