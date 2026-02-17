@@ -473,12 +473,8 @@ class MilkyStoryScraper(BaseScraper):
 # ═════════════════════════════════════════════════════
 class UrduPointScraper(BaseScraper):
     BASE = "https://www.urdupoint.com"
-
-    CATEGORIES = [
-        "moral-stories",
-        "true-stories",
-        "funny-stories",
-    ]
+    LISTING = f"{BASE}/kids/section/stories-page{{page}}.html"
+    TOTAL_PAGES = 173
 
     def __init__(self, num_threads: int):
         super().__init__("urdupoint", "urdupoint.json", num_threads)
@@ -490,44 +486,25 @@ class UrduPointScraper(BaseScraper):
     def collect_links(self):
         links: list[tuple[str, str]] = []
 
-        for cat in self.CATEGORIES:
-            self.logger.info("  ── Category: %s ──", cat)
-
-            cat_url = f"{self.BASE}/kids/category/{cat}.html"
-            html = fetch_page(cat_url, referer=f"{self.BASE}/kids/")
+        consecutive_fails = 0
+        for pn in range(1, self.TOTAL_PAGES + 1):
+            page_url = self.LISTING.format(page=pn)
+            self.logger.info("  page %d/%d", pn, self.TOTAL_PAGES)
+            delay(URDUPOINT_DELAY)
+            html = fetch_page(page_url, referer=f"{self.BASE}/kids/")
             if not html:
-                self.logger.error("  Failed to fetch %s", cat)
-                continue
-
-            cat_links = self._extract_links(html)
-            links.extend(cat_links)
-            self.logger.info("  Main page: %d links", len(cat_links))
-
-            total_pages = self._get_total_pages(html, cat)
-            self.logger.info("  Total pages: %d", total_pages)
-
-            consecutive_fails = 0
-            for pn in range(1, total_pages + 1):
-                page_url = f"{self.BASE}/kids/category/{cat}-page{pn}.html"
-                delay(URDUPOINT_DELAY)
-                ph = fetch_page(page_url, referer=cat_url)
-                if not ph:
-                    consecutive_fails += 1
-                    if consecutive_fails >= 5:
-                        self.logger.error(
-                            "  %d consecutive failures at page %d — stopping %s",
-                            consecutive_fails, pn, cat,
-                        )
-                        break
-                    continue
-                consecutive_fails = 0
-                pl = self._extract_links(ph)
-                links.extend(pl)
-                if pn % 25 == 0:
-                    self.logger.info(
-                        "  %s p%d/%d  links=%d",
-                        cat, pn, total_pages, len(links),
+                consecutive_fails += 1
+                if consecutive_fails >= 5:
+                    self.logger.error(
+                        "  %d consecutive failures at page %d — stopping",
+                        consecutive_fails, pn,
                     )
+                    break
+                continue
+            consecutive_fails = 0
+            pl = self._extract_links(html)
+            links.extend(pl)
+            self.logger.info("  page %d → %d links (total %d)", pn, len(pl), len(links))
 
         self.logger.info("  Total collected: %d links", len(links))
         return links
@@ -548,19 +525,6 @@ class UrduPointScraper(BaseScraper):
             if title:
                 out.append((full, title))
         return out
-
-    def _get_total_pages(self, html: str, cat: str) -> int:
-        # Primary: find max page number from pagination links
-        mx = 1
-        for m2 in re.finditer(rf"{re.escape(cat)}-page(\d+)\.html", html):
-            mx = max(mx, int(m2.group(1)))
-        if mx > 1:
-            return mx
-        # Fallback: parse "Total N Records" text
-        m = re.search(r"Total\s+(\d+)\s+Records", html)
-        if m:
-            return (int(m.group(1)) + 11) // 12  # 12 per page
-        return mx
 
     # ── story parsing ────────────────────────────────
     def parse_story(self, url, title, html):
