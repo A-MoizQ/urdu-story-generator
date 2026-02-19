@@ -22,9 +22,9 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel, Field
 
 # --- path setup ---
@@ -73,10 +73,25 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.cors_origins_list,
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+
+# ── Explicit OPTIONS handler so preflight never hits a 400 ──
+@app.options("/{full_path:path}")
+async def preflight_handler(full_path: str, request: Request):
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400",
+        },
+    )
 
 
 # ── Request / Response schemas ──
