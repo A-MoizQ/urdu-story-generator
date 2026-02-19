@@ -1,8 +1,98 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ══════════════════════════════════════════
+   CSS Variables — Day (default) & Night
+══════════════════════════════════════════ */
+:root {
+  /* Shared */
+  --gold:        #A07840;
+  --gold-dark:   #7A5828;
+  --gold-light:  #C8A96E;
+  --red:         #8B1A1A;
+  --red-dark:    #5C0F0F;
+
+  /* DAY defaults — warm cream / sandstone light-mode */
+  --bg-page:         #F2E8D5;
+  --bg-page-alt:     #E8DABB;
+  --bg-card:         rgba(255, 248, 235, 0.97);
+  --bg-card-deep:    #FBF5E8;
+  --bg-input:        rgba(242, 232, 213, 0.9);
+  --text-primary:    #3A1A0A;
+  --text-secondary:  #5C3010;
+  --text-muted:      #6B3A18;
+  --border-color:    rgba(139, 26, 26, 0.45);
+  --border-glow:     rgba(139, 26, 26, 0.15);
+  --arch-bg-top:     #8B1A1A;
+  --arch-bg-bot:     #5C0F0F;
+  --arch-card-bg:    #F5EDD8;
+  --arch-card-deep:  #EDE0C4;
+  --bubble-user-bg1: #C8A96E;
+  --bubble-user-bg2: #A07840;
+  --bubble-user-txt: #3A1A0A;
+  --bubble-ai-bg1:   #8B1A1A;
+  --bubble-ai-bg2:   #5C0F0F;
+  --bubble-ai-txt:   #F5F0E8;
+  --input-bg:        rgba(255, 248, 235, 0.9);
+  --input-border:    rgba(139, 26, 26, 0.35);
+  --input-color:     #3A1A0A;
+  --placeholder-color: rgba(58, 26, 10, 0.45);
+  --scrollbar-thumb: rgba(139, 26, 26, 0.35);
+  --scrollbar-hover: rgba(139, 26, 26, 0.6);
+  --palki-bg1:       #8B1A1A;
+  --palki-bg2:       #5C0F0F;
+  --palki-slat-even: rgba(139, 26, 26, 0.92);
+  --palki-slat-odd:  rgba(92, 15, 15, 0.88);
+  --footer-color:    rgba(92, 15, 15, 0.55);
+  --divider-grad:    rgba(139, 26, 26, 0.6);
+  --ray-color-start: rgba(200,169,110,0.6);
+  --jali-opacity:    0.06;
+}
+
+/* NIGHT — deep midnight dark-mode */
+.night-mode {
+  --gold:            #C8A96E;
+  --gold-dark:       #A07840;
+  --gold-light:      #E8D4A0;
+  --bg-page:         #040810;
+  --bg-page-alt:     #060C16;
+  --bg-card:         rgba(10, 18, 38, 0.97);
+  --bg-card-deep:    #081228;
+  --bg-input:        rgba(8, 16, 32, 0.9);
+  --text-primary:    #E8D4A0;
+  --text-secondary:  #C8A96E;
+  --text-muted:      rgba(200,169,110,0.5);
+  --border-color:    rgba(200,169,110,0.4);
+  --border-glow:     rgba(200,169,110,0.15);
+  --arch-bg-top:     #1A2744;
+  --arch-bg-bot:     #0F1830;
+  --arch-card-bg:    #0A1428;
+  --arch-card-deep:  #06101E;
+  --bubble-user-bg1: #1A2744;
+  --bubble-user-bg2: #253660;
+  --bubble-user-txt: #E8D4A0;
+  --bubble-ai-bg1:   #0A1428;
+  --bubble-ai-bg2:   #081020;
+  --bubble-ai-txt:   #C8A96E;
+  --input-bg:        rgba(8, 16, 32, 0.9);
+  --input-border:    rgba(200,169,110,0.35);
+  --input-color:     #E8D4A0;
+  --placeholder-color: rgba(200,169,110,0.4);
+  --scrollbar-thumb: rgba(200,169,110,0.35);
+  --scrollbar-hover: rgba(200,169,110,0.65);
+  --palki-bg1:       #1A2744;
+  --palki-bg2:       #0F1830;
+  --palki-slat-even: rgba(26, 39, 68, 0.94);
+  --palki-slat-odd:  rgba(15, 24, 48, 0.90);
+  --footer-color:    rgba(200,169,110,0.3);
+  --divider-grad:    rgba(200,169,110,0.5);
+  --ray-color-start: rgba(155,176,208,0.45);
+  --jali-opacity:    0.03;
+}
 
 /* ── Base ── */
 * {
@@ -10,9 +100,16 @@
 }
 
 body {
-  background: #050d1a;
-  color: #e0e0e0;
+  background: var(--bg-page);
+  color: var(--text-primary);
   overflow-x: hidden;
+  font-family: 'Cinzel', serif;
+  transition: background 0.8s ease, color 0.8s ease;
+}
+
+/* Full-viewport background when night-mode is on <body> */
+body.night-mode {
+  background: var(--bg-page);
 }
 
 /* ── Scrollbar ── */
@@ -20,14 +117,14 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(10, 26, 46, 0.5);
+  background: rgba(0,0,0,0.1);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 136, 0.3);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 255, 136, 0.5);
+  background: var(--scrollbar-hover);
 }
 
 /* ── Urdu text direction ── */
@@ -38,58 +135,120 @@ body {
   line-height: 2.2;
 }
 
-/* ── Glow effects ── */
-.neon-border {
-  border: 1px solid rgba(0, 255, 136, 0.3);
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.15),
-    inset 0 0 8px rgba(0, 255, 136, 0.05);
+/* ── Input placeholder colour ── */
+input::placeholder {
+  color: var(--placeholder-color);
+  opacity: 1;
 }
 
-.neon-border-cyan {
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.15),
-    inset 0 0 8px rgba(0, 229, 255, 0.05);
+/* ── Mughal Border ── */
+.mughal-border {
+  border: 1px solid rgba(200, 169, 110, 0.5);
+  box-shadow:
+    0 0 12px rgba(200, 169, 110, 0.2),
+    inset 0 0 12px rgba(200, 169, 110, 0.06);
 }
 
+.mughal-border-red {
+  border: 1px solid rgba(139, 26, 26, 0.6);
+  box-shadow:
+    0 0 12px rgba(139, 26, 26, 0.25),
+    inset 0 0 12px rgba(139, 26, 26, 0.08);
+}
+
+/* Legacy aliases */
+.neon-border { border: 1px solid rgba(200, 169, 110, 0.4); box-shadow: 0 0 8px rgba(200,169,110,0.15), inset 0 0 8px rgba(200,169,110,0.05); }
+.neon-border-cyan { border: 1px solid rgba(200, 169, 110, 0.35); box-shadow: 0 0 8px rgba(200,169,110,0.12), inset 0 0 8px rgba(200,169,110,0.04); }
+
+/* ── Glow text ── */
 .neon-glow {
-  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5),
-    0 0 20px rgba(0, 255, 136, 0.3);
+  text-shadow:
+    0 0 12px rgba(200, 169, 110, 0.7),
+    0 0 24px rgba(200, 169, 110, 0.4),
+    0 0 48px rgba(200, 169, 110, 0.2);
 }
 
 .neon-glow-cyan {
-  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5),
-    0 0 20px rgba(0, 229, 255, 0.3);
+  text-shadow:
+    0 0 10px rgba(200, 169, 110, 0.5),
+    0 0 20px rgba(200, 169, 110, 0.3);
 }
 
-/* ── Scan line overlay ── */
-.scan-line-overlay::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    transparent 50%,
-    rgba(0, 255, 136, 0.02) 50%
-  );
-  background-size: 100% 4px;
-  pointer-events: none;
-  z-index: 1;
+/* ── Mughal background pattern (geometric jali) ── */
+.bg-grid {
+  background-color: #1a0805;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 38px,
+      rgba(200, 169, 110, 0.04) 38px,
+      rgba(200, 169, 110, 0.04) 39px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 38px,
+      rgba(200, 169, 110, 0.04) 38px,
+      rgba(200, 169, 110, 0.04) 39px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 27px,
+      rgba(200, 169, 110, 0.02) 27px,
+      rgba(200, 169, 110, 0.02) 28px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 27px,
+      rgba(200, 169, 110, 0.02) 27px,
+      rgba(200, 169, 110, 0.02) 28px
+    );
+}
+
+/* ── Starry night background ── */
+.bg-night {
+  background-color: #040810;
+  background-image: none;
+}
+
+/* ── Sun rays animation ── */
+@keyframes sunRayExpand {
+  0%, 100% { transform: scaleY(1) translateX(-50%); opacity: 0.5; }
+  50% { transform: scaleY(1.08) translateX(-50%); opacity: 0.9; }
+}
+@keyframes sunGlow {
+  0%, 100% { filter: drop-shadow(0 0 10px #C8A96E) drop-shadow(0 0 30px #C8A96E80); }
+  50% { filter: drop-shadow(0 0 20px #E8D4A0) drop-shadow(0 0 60px #C8A96E); }
+}
+@keyframes moonGlow {
+  0%, 100% { filter: drop-shadow(0 0 10px #9BB0D0) drop-shadow(0 0 25px #6080B080); }
+  50% { filter: drop-shadow(0 0 20px #C0D0E8) drop-shadow(0 0 50px #9BB0D0); }
+}
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.4); }
+}
+@keyframes floatStar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes sunRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes rayPulse {
+  0%, 100% { opacity: 0.5; transform-origin: top center; transform: scaleY(1); }
+  50% { opacity: 0.9; transform-origin: top center; transform: scaleY(1.08); }
 }
 
 /* ── Chat message animations ── */
 @keyframes messageAppear {
-  0% {
-    opacity: 0;
-    transform: translateY(15px) scale(0.97);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  0%  { opacity: 0; transform: translateY(14px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
-
 .message-appear {
   animation: messageAppear 0.35s ease-out forwards;
 }
@@ -99,18 +258,86 @@ body {
   content: "▎";
   display: inline;
   animation: typing 1s ease-in-out infinite;
-  color: #00ff88;
+  color: var(--gold);
   margin-right: 2px;
 }
+@keyframes typing {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
 
-/* ── Background grid ── */
-.bg-grid {
-  background-image: linear-gradient(
-      rgba(0, 255, 136, 0.03) 1px,
-      transparent 1px
-    ),
-    linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+/* ── Palanquin (Palki) blinds ── */
+.palki-blinds {
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 0;
+}
+.palki-container:hover .palki-blinds,
+.palki-container:focus-within .palki-blinds {
+  max-height: 400px;
+}
+
+/* Individual blind slat */
+.blind-slat {
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  transform: scaleY(1);
+  transform-origin: top center;
+}
+.palki-container:hover .blind-slat {
+  transform: scaleY(0);
+  opacity: 0;
+}
+
+/* ── Mughal arch shape ── */
+.mughal-arch-top {
+  clip-path: polygon(
+    0% 100%,
+    0% 30%,
+    5% 20%,
+    12% 10%,
+    22% 4%,
+    35% 0%,
+    50% 0%,
+    65% 0%,
+    78% 4%,
+    88% 10%,
+    95% 20%,
+    100% 30%,
+    100% 100%
+  );
+}
+
+/* Onion / bulbous dome arch (more authentic Mughal) */
+.mughal-onion-arch {
+  position: relative;
+}
+.mughal-onion-arch::before {
+  content: "";
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 64px;
+  background: linear-gradient(to bottom, rgba(139, 26, 26, 0.9), rgba(92, 15, 15, 0.95));
+  border: 1px solid rgba(200, 169, 110, 0.5);
+  border-bottom: none;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  box-shadow: 0 -4px 20px rgba(200, 169, 110, 0.3);
+}
+
+/* ── Scan line overlay (subtle) ── */
+.scan-line-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    transparent 50%,
+    rgba(200, 169, 110, 0.012) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* ── Gradient border ── */
@@ -123,30 +350,74 @@ body {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, #00ff88, #00e5ff, #00ff88);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+  background: linear-gradient(135deg, #C8A96E, #8B1A1A, #C8A96E);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
 }
 
-/* ── Button hover ── */
+/* ── Button generate ── */
 .btn-generate {
-  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  background: linear-gradient(135deg, #8B1A1A, #C8A96E 60%, #A07840);
+  border: 1px solid rgba(200, 169, 110, 0.6);
+  color: var(--ivory);
   transition: all 0.3s ease;
 }
 .btn-generate:hover {
-  box-shadow: 0 0 20px rgba(0, 255, 136, 0.4),
-    0 0 40px rgba(0, 255, 136, 0.2);
+  box-shadow:
+    0 0 20px rgba(200, 169, 110, 0.5),
+    0 0 40px rgba(139, 26, 26, 0.3);
   transform: translateY(-1px);
+  background: linear-gradient(135deg, #A02020, #E8D4A0 60%, #C8A96E);
 }
-.btn-generate:active {
-  transform: translateY(0);
-}
+.btn-generate:active { transform: translateY(0); }
 .btn-generate:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
+
+/* ── Mughal ornamental divider ── */
+.mughal-divider {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+.mughal-divider::before,
+.mughal-divider::after {
+  content: "✦";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gold);
+  font-size: 10px;
+}
+.mughal-divider::before { left: calc(50% - 60px); }
+.mughal-divider::after  { left: calc(50% + 50px); }
+
+/* ── Inset jali pattern on panels ── */
+.jali-overlay {
+  position: relative;
+  overflow: hidden;
+}
+.jali-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: var(--jali-opacity, 0.04);
+  background-image:
+    repeating-linear-gradient(45deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(-45deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 50%);
+  background-size: 12px 12px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Fade-in animation ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }

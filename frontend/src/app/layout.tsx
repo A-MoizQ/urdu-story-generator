@@ -13,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ur" dir="rtl">
-      <body className="min-h-screen bg-grid">{children}</body>
+      <body style={{ minHeight: "100vh" }}>{children}</body>
     </html>
   );
 }
