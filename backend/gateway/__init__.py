@@ -79,16 +79,26 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+ALLOWED_ORIGINS = set(config.cors_origins_list)
 
-# ── Explicit OPTIONS handler so preflight never hits a 400 ──
+
+# ── Explicit OPTIONS handler — ensures preflight never returns 400
+# even when Render's proxy strips the Origin header before it reaches us ──
 @app.options("/{full_path:path}")
 async def preflight_handler(full_path: str, request: Request):
+    origin = request.headers.get("origin", "")
+    # Only respond with CORS headers if the origin is allowed
+    if origin in ALLOWED_ORIGINS:
+        allowed_origin = origin
+    else:
+        # No Origin header (Render proxy stripped it) — reflect the configured origin
+        allowed_origin = next(iter(ALLOWED_ORIGINS), "*")
     return Response(
         status_code=200,
         headers={
-            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Origin": allowed_origin,
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
             "Access-Control-Max-Age": "86400",
         },
     )
