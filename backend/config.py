@@ -1,10 +1,6 @@
 """
 Configuration management for the backend service.
 All settings are loaded from environment variables with sensible defaults.
-
-APP_ENV controls the runtime mode:
-    - "development" → uses mock story data (no model artifacts needed)
-    - "production"  → requires real tokenizer + trigram model files
 """
 
 import os
@@ -14,19 +10,6 @@ from dataclasses import dataclass, field
 @dataclass
 class Config:
     """Central configuration for the story generation backend."""
-
-    # --- Environment ---
-    app_env: str = field(
-        default_factory=lambda: os.getenv("APP_ENV", "development")
-    )
-
-    @property
-    def is_development(self) -> bool:
-        return self.app_env.lower() == "development"
-
-    @property
-    def is_production(self) -> bool:
-        return self.app_env.lower() == "production"
 
     # --- Server ---
     grpc_host: str = field(
@@ -61,18 +44,6 @@ class Config:
     generation_delay_ms: int = field(
         default_factory=lambda: int(os.getenv("GENERATION_DELAY_MS", "50"))
     )
-
-    # --- Special tokens (unused Unicode bytes as per assignment) ---
-    # These should match whatever your teammate picks during preprocessing.
-    eos_token: str = field(
-        default_factory=lambda: os.getenv("EOS_TOKEN", "\uFDD0")
-    )  # Sentence boundary
-    eop_token: str = field(
-        default_factory=lambda: os.getenv("EOP_TOKEN", "\uFDD1")
-    )  # Paragraph boundary
-    eot_token: str = field(
-        default_factory=lambda: os.getenv("EOT_TOKEN", "\uFDD2")
-    )  # Story boundary
 
     # --- CORS ---
     cors_origins: str = field(

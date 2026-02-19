@@ -67,14 +67,22 @@ class BPETokenizer:
     def vocab_size(self) -> int:
         return len(self._vocab)
 
+    def special_token_id(self, name: str) -> int | None:
+        """Return the vocab ID for a special token by name (e.g. '<EOS>').
+
+        Returns None if the token is not in the vocabulary.
+        """
+        pua = self.special_map.get(name)
+        if pua is None:
+            return None
+        return self._vocab.get(pua)
+
     def load(self, path: str) -> None:
         """Load a trained BPE tokenizer from a JSON file.
 
-        Expected JSON schema:
-        {
-            "vocab": { "token": id, ... },
-            "merges": [ ["a", "b"], ... ]
-        }
+        Supports two merge formats produced by the trainer:
+          - dict:  { "id1,id2": new_id, ... }   (current artifact format)
+          - list:  [ ["tok_a", "tok_b"], ... ]   (legacy format)
         """
         filepath = Path(path)
         if not filepath.exists():
@@ -89,23 +97,42 @@ class BPETokenizer:
 
         self._vocab = data["vocab"]
         self._inverse_vocab = {int(v): k for k, v in self._vocab.items()}
-        self._merges = [tuple(m) for m in data["merges"]]
-        
-        # Reconstruct the fast merge dictionary for the encode() loop
+
+        # Override special_map from file if present so it stays in sync
+        if "special_map" in data:
+            self.special_map = data["special_map"]
+
+        # Build _merge_dict from whichever format is stored
+        raw_merges = data["merges"]
         self._merge_dict = {}
-        for p1_str, p2_str in self._merges:
-            if p1_str in self._vocab and p2_str in self._vocab:
-                p1_id = self._vocab[p1_str]
-                p2_id = self._vocab[p2_str]
-                combined_str = p1_str + p2_str
-                if combined_str in self._vocab:
-                    self._merge_dict[(p1_id, p2_id)] = self._vocab[combined_str]
+        self._merges = []
+
+        if isinstance(raw_merges, dict):
+            # Format: { "id1,id2": new_id }
+            for key_str, new_id in raw_merges.items():
+                id1, id2 = map(int, key_str.split(","))
+                self._merge_dict[(id1, id2)] = int(new_id)
+                # Reconstruct string-pair list for compatibility
+                p1_str = self._inverse_vocab.get(id1, "")
+                p2_str = self._inverse_vocab.get(id2, "")
+                self._merges.append((p1_str, p2_str))
+        else:
+            # Format: [ ["tok_a", "tok_b"], ... ]
+            for pair in raw_merges:
+                p1_str, p2_str = pair[0], pair[1]
+                self._merges.append((p1_str, p2_str))
+                if p1_str in self._vocab and p2_str in self._vocab:
+                    p1_id = self._vocab[p1_str]
+                    p2_id = self._vocab[p2_str]
+                    combined_str = p1_str + p2_str
+                    if combined_str in self._vocab:
+                        self._merge_dict[(p1_id, p2_id)] = self._vocab[combined_str]
 
         self._loaded = True
         logger.info(
             "Tokenizer loaded: vocab_size=%d, merges=%d",
             self.vocab_size,
-            len(self._merges),
+            len(self._merge_dict),
         )
 
     def encode(self, text: str) -> list[int]:
@@ -145,19 +172,31 @@ class BPETokenizer:
         return "".join(self.decode_single(i) for i in ids)
 
     def decode_single(self, token_id: int) -> str:
-        """Decode a single token ID into its text representation."""
+        """Decode a single token ID into its display text representation."""
         if not self._loaded:
             return chr(token_id) if 0 <= token_id < 0x110000 else "?"
-        token_str = self._inverse_vocab.get(token_id, self.special_map["<UNK>"])
-        
-        # Reverse PUA mapping
-        for token_name, pua in self.special_map.items():
-            token_str = token_str.replace(pua, token_name)
-            
-        # Reverse space mapping
-        token_str = token_str.replace(self.space_char, " ")
-        
-        return token_str
+
+        token_str = self._inverse_vocab.get(token_id)
+        if token_str is None:
+            return ""
+
+        # Map special PUA tokens to human-readable display text
+        bos_pua = self.special_map.get("<BOS>", "\ue000")
+        eos_pua = self.special_map.get("<EOS>", "\ue001")
+        para_pua = self.special_map.get("<PARA>", "\ue002")
+        unk_pua = self.special_map.get("<UNK>", "\ue005")
+
+        if token_str == bos_pua:
+            return ""          # BOS is invisible
+        if token_str == eos_pua:
+            return "۔ "        # Urdu full stop + space
+        if token_str == para_pua:
+            return "\n\n"      # Paragraph break
+        if token_str == unk_pua:
+            return ""          # Unknown — skip silently
+
+        # Reverse the word-boundary marker added during preprocessing
+        return token_str.replace(self.space_char, " ")
     
     # ------------------------------------------------------------------
     # Training & Saving (Phase II Logic)

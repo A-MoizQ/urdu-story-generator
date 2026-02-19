@@ -109,24 +109,24 @@ class TrigramModel:
 
         distribution = {}
         known_vocab = list(self._unigram_counts.keys())
-        
+
         l1, l2, l3 = self._lambdas
-        
+
         for w in known_vocab:
             # 1. Unigram: P(w)
             p_uni = self._unigram_counts[w] / self._total_unigrams if self._total_unigrams > 0 else 0
-            
-            # 2. Bigram: P(w | t2)
-            count_t2 = self._unigram_counts[token2]
-            p_bi = self._bigram_counts[(token2, w)] / count_t2 if count_t2 > 0 else 0
-            
+
+            # 2. Bigram: P(w | t2)  — use .get() so missing keys return 0
+            count_t2 = self._unigram_counts.get(token2, 0)
+            p_bi = self._bigram_counts.get((token2, w), 0) / count_t2 if count_t2 > 0 else 0
+
             # 3. Trigram: P(w | t1, t2)
-            count_t1_t2 = self._bigram_counts[(token1, token2)]
-            p_tri = self._trigram_counts[(token1, token2, w)] / count_t1_t2 if count_t1_t2 > 0 else 0
-            
+            count_t1_t2 = self._bigram_counts.get((token1, token2), 0)
+            p_tri = self._trigram_counts.get((token1, token2, w), 0) / count_t1_t2 if count_t1_t2 > 0 else 0
+
             # Linear Interpolation
             prob = (l1 * p_uni) + (l2 * p_bi) + (l3 * p_tri)
-                   
+
             if prob > 0:
                 distribution[w] = prob
 

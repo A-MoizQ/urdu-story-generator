@@ -32,6 +32,22 @@ try:
 except ImportError:
     pass
 
+# ── Resolve model paths relative to the backend/ directory ──────────────────
+# This ensures the server works regardless of which directory it is launched
+# from (project root, backend/, Docker, etc.).
+_BACKEND_DIR = Path(__file__).resolve().parent
+
+def _resolve_path(env_var: str, default: str) -> None:
+    """If env_var is set to a relative path, make it absolute from backend/."""
+    raw = os.environ.get(env_var, default)
+    p = Path(raw)
+    if not p.is_absolute():
+        os.environ[env_var] = str(_BACKEND_DIR / p)
+
+_resolve_path("TOKENIZER_PATH",    "models/bpe_tokenizer.json")
+_resolve_path("TRIGRAM_MODEL_PATH","models/trigram_model.json")
+_resolve_path("MODEL_DIR",         "models")
+
 
 async def main() -> None:
     logging.basicConfig(
@@ -43,19 +59,13 @@ async def main() -> None:
     # Import here so path setup and dotenv loading are done first
     import uvicorn
 
-    from backend.config import config
     from backend.server.main import serve as grpc_serve
 
     http_port = int(os.getenv("HTTP_PORT", os.getenv("PORT", "10000")))
 
-    logger.info("Starting unified server...")
-    logger.info("  APP_ENV → %s", config.app_env)
-    if config.is_development:
-        logger.info("  MODE   → MOCK (pre-written stories, no model needed)")
-    else:
-        logger.info("  MODE   → PRODUCTION (real model pipeline)")
-    logger.info("  gRPC   → 0.0.0.0:%s", os.getenv("GRPC_PORT", "50051"))
-    logger.info("  HTTP   → 0.0.0.0:%s", http_port)
+    logger.info("Starting Urdu Story Generator backend...")
+    logger.info("  gRPC  → 0.0.0.0:%s", os.getenv("GRPC_PORT", "50051"))
+    logger.info("  HTTP  → 0.0.0.0:%s", http_port)
 
     # Create both server tasks
     grpc_task = asyncio.create_task(grpc_serve())

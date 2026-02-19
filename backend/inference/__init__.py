@@ -71,15 +71,19 @@ class StoryGenerator:
 
         # We need at least 2 tokens for trigram context
         if len(token_ids) < 2:
-            # Pad with a repeated token if prefix is too short
             while len(token_ids) < 2:
                 token_ids = [token_ids[0]] + token_ids if token_ids else [0, 0]
 
         # Start building the full output text
         full_text = prefix
 
-        # Determine the EOT token ID
-        eot_id = self.tokenizer._vocab.get(config.eot_token)
+        # Resolve stop-token IDs from the tokenizer's own special map
+        # <EOS> = sentence boundary  → display as "۔ "
+        # <PARA> = paragraph break   → display as "\n\n"
+        # <BOS> = beginning of story → stop generation (marks story start)
+        eos_id  = self.tokenizer.special_token_id("<EOS>")
+        para_id = self.tokenizer.special_token_id("<PARA>")
+        bos_id  = self.tokenizer.special_token_id("<BOS>")
 
         generated_count = 0
 
@@ -93,25 +97,17 @@ class StoryGenerator:
             token_ids.append(next_token_id)
             generated_count += 1
 
-            # Decode the new token
-            token_text = self.tokenizer.decode_single(next_token_id)
-
-            # Check for end-of-text
-            is_eot = eot_id is not None and next_token_id == eot_id
-            if is_eot:
-                yield token_text, full_text, True
+            # BOS appearing mid-generation signals a new story — stop.
+            if bos_id is not None and next_token_id == bos_id:
+                yield "", full_text, True
                 return
 
-            # Replace special tokens with readable markers for the UI
-            display_text = token_text
-            if token_text == config.eos_token:
-                display_text = "۔ "  # Urdu full stop
-            elif token_text == config.eop_token:
-                display_text = "\n\n"  # Paragraph break
+            # Decode via the tokenizer (handles PUA → display mapping)
+            display_text = self.tokenizer.decode_single(next_token_id)
 
             full_text += display_text
 
             yield display_text, full_text, False
 
-        # Reached max length without EOT
+        # Reached max_length — emit a final finished event
         yield "", full_text, True
