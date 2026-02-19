@@ -24,16 +24,6 @@ COPY scripts/generate_proto.sh scripts/
 RUN pip install --no-cache-dir grpcio-tools==1.68.1 protobuf==5.29.2 \
     && bash scripts/generate_proto.sh
 
-# Copy model artifacts and conversion script, then build SQLite DB
-# This converts the 40MB JSON → compact SQLite so the runtime image
-# never needs to load the full JSON into RAM (~350MB → ~5MB at runtime).
-COPY models/ /build/models/
-COPY scripts/convert_model_to_sqlite.py scripts/
-
-RUN python scripts/convert_model_to_sqlite.py \
-        --input  /build/models/trigram_model.json \
-        --output /build/models/trigram_model.db
-
 # ========================  RUNTIME STAGE  ========================
 FROM python:3.12-slim
 
@@ -52,13 +42,9 @@ COPY . /app/backend/
 # Copy generated proto stubs from builder (overwrite source-only proto dir)
 COPY --from=builder /build/proto/ /app/backend/proto/
 
-# Copy model artifacts from builder:
-#   - bpe_tokenizer.json  (7 KB — fine in RAM)
-#   - trigram_model.db    (SQLite — queried on-demand, ~5 MB RAM)
-# trigram_model.json is NOT copied — the .db is always preferred at runtime,
-# keeping the image lean and avoiding the 350 MB in-memory load on Render.
-COPY --from=builder /build/models/bpe_tokenizer.json /app/backend/models/
-COPY --from=builder /build/models/trigram_model.db   /app/backend/models/
+# Model files (bpe_tokenizer.json + trigram_model.db) are already present
+# under /app/backend/models/ from the COPY above.
+# trigram_model.db is committed to git and used directly — no conversion needed.
 
 # Ensure the package is importable from /app
 ENV PYTHONPATH=/app
