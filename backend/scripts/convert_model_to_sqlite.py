@@ -43,7 +43,10 @@ def convert(input_path: Path, output_path: Path) -> None:
         logger.info("Removed existing %s", output_path)
 
     conn = sqlite3.connect(output_path)
-    conn.execute("PRAGMA journal_mode = WAL")
+    # Do NOT use WAL journal mode — WAL bakes into the file header and requires
+    # sidecar files (-shm, -wal) even for read-only access, which fails in
+    # Docker containers where the models directory is owned by root.
+    # Default DELETE journal mode works fine for a read-only deployment artifact.
     conn.execute("PRAGMA synchronous  = NORMAL")
     conn.execute("PRAGMA cache_size   = -32768")   # 32 MB page cache during build
 
