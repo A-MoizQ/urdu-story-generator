@@ -11,3 +11,8 @@
 **/htmlcov
 .github/
 README.md
+
+# Exclude the local SQLite DB from the build context —
+# the builder stage regenerates it from trigram_model.json at build time.
+# This avoids uploading 89 MB to the Docker daemon unnecessarily.
+models/trigram_model.db

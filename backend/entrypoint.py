@@ -46,6 +46,7 @@ def _resolve_path(env_var: str, default: str) -> None:
 
 _resolve_path("TOKENIZER_PATH",    "models/bpe_tokenizer.json")
 _resolve_path("TRIGRAM_MODEL_PATH","models/trigram_model.json")
+_resolve_path("TRIGRAM_DB_PATH",   "models/trigram_model.db")
 _resolve_path("MODEL_DIR",         "models")
 
 

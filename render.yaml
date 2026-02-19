@@ -32,6 +32,8 @@ services:
         value: "/app/backend/models/bpe_tokenizer.json"
       - key: TRIGRAM_MODEL_PATH
         value: "/app/backend/models/trigram_model.json"
+      - key: TRIGRAM_DB_PATH
+        value: "/app/backend/models/trigram_model.db"
       - key: GENERATION_DELAY_MS
         value: "30"
       - key: CORS_ORIGINS

@@ -24,6 +24,16 @@ COPY scripts/generate_proto.sh scripts/
 RUN pip install --no-cache-dir grpcio-tools==1.68.1 protobuf==5.29.2 \
     && bash scripts/generate_proto.sh
 
+# Copy model artifacts and conversion script, then build SQLite DB
+# This converts the 40MB JSON → compact SQLite so the runtime image
+# never needs to load the full JSON into RAM (~350MB → ~5MB at runtime).
+COPY models/ /build/models/
+COPY scripts/convert_model_to_sqlite.py scripts/
+
+RUN python scripts/convert_model_to_sqlite.py \
+        --input  /build/models/trigram_model.json \
+        --output /build/models/trigram_model.db
+
 # ========================  RUNTIME STAGE  ========================
 FROM python:3.12-slim
 
@@ -36,21 +46,25 @@ WORKDIR /app
 # Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
 
-# Copy application code
+# Copy application code (models/ excluded via .dockerignore — those come from builder)
 COPY . /app/backend/
 
 # Copy generated proto stubs from builder (overwrite source-only proto dir)
 COPY --from=builder /build/proto/ /app/backend/proto/
 
-# Copy model artifacts (if present)
-COPY models/ /app/backend/models/
+# Copy model artifacts from builder:
+#   - bpe_tokenizer.json  (7 KB — fine in RAM)
+#   - trigram_model.db    (SQLite — queried on-demand, ~5 MB RAM)
+# trigram_model.json is NOT copied — the .db is always preferred at runtime,
+# keeping the image lean and avoiding the 350 MB in-memory load on Render.
+COPY --from=builder /build/models/bpe_tokenizer.json /app/backend/models/
+COPY --from=builder /build/models/trigram_model.db   /app/backend/models/
 
 # Ensure the package is importable from /app
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-# Default env vars (can be overridden at runtime)
-ENV APP_ENV=production
+# Default env vars (can be overridden at runtime via render.yaml)
 ENV GRPC_HOST=0.0.0.0
 ENV GRPC_PORT=50051
 # Render sets PORT=10000 automatically for web services
@@ -58,6 +72,7 @@ ENV HTTP_PORT=10000
 ENV MODEL_DIR=/app/backend/models
 ENV TOKENIZER_PATH=/app/backend/models/bpe_tokenizer.json
 ENV TRIGRAM_MODEL_PATH=/app/backend/models/trigram_model.json
+ENV TRIGRAM_DB_PATH=/app/backend/models/trigram_model.db
 
 # Expose both ports
 EXPOSE 50051

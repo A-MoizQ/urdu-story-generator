@@ -36,6 +36,11 @@ class Config:
             "TRIGRAM_MODEL_PATH", "models/trigram_model.json"
         )
     )
+    trigram_db_path: str = field(
+        default_factory=lambda: os.getenv(
+            "TRIGRAM_DB_PATH", "models/trigram_model.db"
+        )
+    )
 
     # --- Generation defaults ---
     default_max_length: int = field(

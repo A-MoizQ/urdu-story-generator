@@ -66,8 +66,15 @@ class StoryGenerator:
         if max_length <= 0:
             max_length = config.default_max_length
 
-        # Encode the prefix to get initial context
-        token_ids = self.tokenizer.encode(prefix)
+        # Encode the prefix to get initial context.
+        # Prepend a space so word-initial tokens get the ▁ marker that
+        # matches how the training corpus was tokenised (e.g. "ایک" →
+        # [▁ایک] not [ا,ی,ک]).  Strip the synthetic leading token after.
+        token_ids = self.tokenizer.encode(" " + prefix)
+
+        # Drop the leading ▁-space token that was only added for context
+        if len(token_ids) > 1:
+            token_ids = token_ids[1:]
 
         # We need at least 2 tokens for trigram context
         if len(token_ids) < 2:
@@ -78,13 +85,17 @@ class StoryGenerator:
         full_text = prefix
 
         # Resolve stop-token IDs from the tokenizer's own special map
-        # <EOS> = sentence boundary  → display as "۔ "
+        # <EOS>  = sentence boundary → display as "۔ "
         # <PARA> = paragraph break   → display as "\n\n"
-        # <BOS> = beginning of story → stop generation (marks story start)
+        # <BOS>  = story boundary    → stop generation only after a
+        #          minimum number of tokens have already been generated,
+        #          to avoid stopping immediately on out-of-distribution
+        #          prefix context.
         eos_id  = self.tokenizer.special_token_id("<EOS>")
         para_id = self.tokenizer.special_token_id("<PARA>")
         bos_id  = self.tokenizer.special_token_id("<BOS>")
 
+        MIN_TOKENS_BEFORE_BOS_STOP = 10
         generated_count = 0
 
         while generated_count < max_length:
@@ -97,10 +108,15 @@ class StoryGenerator:
             token_ids.append(next_token_id)
             generated_count += 1
 
-            # BOS appearing mid-generation signals a new story — stop.
+            # BOS mid-generation = story boundary.
+            # Only stop if we've already generated enough content;
+            # otherwise treat it as an invisible token and keep going.
             if bos_id is not None and next_token_id == bos_id:
-                yield "", full_text, True
-                return
+                if generated_count >= MIN_TOKENS_BEFORE_BOS_STOP:
+                    yield "", full_text, True
+                    return
+                # Too early — skip this token silently and continue
+                continue
 
             # Decode via the tokenizer (handles PUA → display mapping)
             display_text = self.tokenizer.decode_single(next_token_id)
