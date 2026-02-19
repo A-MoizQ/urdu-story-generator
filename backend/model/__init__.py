@@ -142,13 +142,15 @@ class TrigramModel:
     # ------------------------------------------------------------------
 
     def _load_sqlite(self, db_path: Path) -> None:
-        """Open SQLite DB — does NOT load data into RAM."""
-        # Open read-only via URI so SQLite never tries to create journal files.
-        # This works even when the file is owned by a different user in Docker.
+        """Open SQLite DB in read-only mode — does NOT load data into RAM.
+
+        Uses the URI ?mode=ro flag so SQLite never attempts to create WAL
+        journal files or lock files.  No PRAGMAs that write state are set,
+        because all write PRAGMAs raise OperationalError on a read-only
+        connection regardless of the mode flag.
+        """
         uri = f"file:{db_path}?mode=ro"
         self._conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
-        self._conn.execute("PRAGMA cache_size = -8192")  # 8 MB page cache
-        self._conn.execute("PRAGMA temp_store = MEMORY")
 
         meta = dict(self._conn.execute("SELECT key, value FROM metadata").fetchall())
         self._lambdas        = tuple(json.loads(meta["lambdas"]))  # type: ignore[assignment]
